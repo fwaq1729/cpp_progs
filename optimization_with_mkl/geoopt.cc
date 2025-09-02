@@ -6,6 +6,8 @@
 // Documentation:
 // Original routines located in: https://github.com/jhrmnn/pyberny
 // written in python using numpy
+// Note.- The json input files data_update_hessian.json and
+//        data_Hproj.json are generated from running pyberny on ethanol molecule
 // Adapted to C++ using MKL routines
 // List of MKL functions used:
 // cblas_dgemm, matrix products
@@ -13,6 +15,7 @@
 // cblas_dscal, scaling a vector
 // cblas_daxpy, ax_p_py routine
 // LAPACKE_dsyev, solving a linear system: A x = b
+// Requirements: i) Google Test; ii) MKL library
 
 using namespace std;
 
