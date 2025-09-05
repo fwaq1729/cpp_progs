@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <stdexcept>
 
 #include <cuda_runtime.h>
 #include <cusolverDn.h>
@@ -161,6 +162,85 @@ vector<double> geoopt_routines_with_cuda::Geoopt_cuda::linear_solver(const vecto
   return h_X;
 }
 
+tuple<vector<double>, vector<double>> geoopt_routines_with_cuda::Geoopt_cuda::eigenvalue_solver(
+  const int ndata,
+  const vector<double>& h_A)
+{
+    const int ndata2 = ndata * ndata;
+    // Pointers for device memory
+    double *d_A, *d_W, *d_work;
+    int *d_info;
+
+    // cuSOLVER variables
+    cusolverDnHandle_t cusolverH = NULL;
+    int lwork = 0;
+
+    // 1. Initialize cuSOLVER handle
+    CUSOLVER_CHECK(cusolverDnCreate(&cusolverH));
+
+    // 2. Allocate device memory
+    CUDA_CHECK(cudaMalloc((void**)&d_A, ndata2 * sizeof(double)));
+    CUDA_CHECK(cudaMalloc((void**)&d_W, ndata * sizeof(double)));
+    CUDA_CHECK(cudaMalloc((void**)&d_info, sizeof(int)));
+
+    // 3. Copy host matrix to device
+    CUDA_CHECK(cudaMemcpy(d_A, h_A.data(), ndata2 * sizeof(double), cudaMemcpyHostToDevice));
+
+    // 4.1. Query for the optimal work buffer size
+    CUSOLVER_CHECK(cusolverDnDsyevd_bufferSize(
+        cusolverH,
+        CUSOLVER_EIG_MODE_VECTOR, // CUSOLVER_EIG_MODE_VECTOR for both eigenvalues and eigenvectors
+        CUBLAS_FILL_MODE_LOWER,   // Lower triangular part of the matrix
+        ndata,                    // Matrix dimension
+        d_A,                      // Device pointer to the matrix
+        ndata,                    // Leading dimension of d_A
+        d_W,                      // Device pointer for eigenvalues
+        &lwork                    // Pointer to workspace size
+    ));
+
+    // 4.2. Allocate device work buffer
+    CUDA_CHECK(cudaMalloc((void**)&d_work, lwork * sizeof(double)));
+
+    // 4.3. Compute eigenvalues and eigenvectors
+    // The eigenvectors are stored in the input matrix d_A
+    CUSOLVER_CHECK(cusolverDnDsyevd(
+        cusolverH,
+        CUSOLVER_EIG_MODE_VECTOR,
+        CUBLAS_FILL_MODE_LOWER,
+        ndata,
+        d_A,
+        ndata,
+        d_W,
+        d_work,
+        lwork,
+        d_info
+    ));
+
+    // 5. Copy results back to host
+    std::vector<double> h_eigenvalues(ndata);
+    std::vector<double> h_eigenvectors(ndata2);
+
+    CUDA_CHECK(cudaMemcpy(h_eigenvalues.data(), d_W, ndata * sizeof(double), cudaMemcpyDeviceToHost));
+    CUDA_CHECK(cudaMemcpy(h_eigenvectors.data(), d_A, ndata2 * sizeof(double), cudaMemcpyDeviceToHost));
+
+    int h_info;
+    CUDA_CHECK(cudaMemcpy(&h_info, d_info, sizeof(int), cudaMemcpyDeviceToHost));
+
+    if (h_info != 0) {
+        const string tag = "cuSOLVER failed to converge. Info = " + to_string(h_info);
+        throw runtime_error(tag);
+    }
+
+    // 6. Clean up
+    CUSOLVER_CHECK(cusolverDnDestroy(cusolverH));
+    CUDA_CHECK(cudaFree(d_A));
+    CUDA_CHECK(cudaFree(d_W));
+    CUDA_CHECK(cudaFree(d_work));
+    CUDA_CHECK(cudaFree(d_info));
+
+    return make_tuple(h_eigenvalues, h_eigenvectors);
+}
+
 void geoopt_routines_with_cuda::Geoopt_cuda::daxpy_cublas(
   vector<double>& h_y,
   const vector<double>& h_x,
@@ -260,6 +340,62 @@ vector<double> geoopt_routines_with_cuda::Geoopt_cuda::get_Hproj(
   return Hproj;
 }
 
+// Computing:
+// dq, dE, on_sphere = quadratic_step(dot(proj, s.interpolated.g), H_proj, s.weights, s.trust, log=log)
+tuple<double, vector<double>, bool> geoopt_routines_with_cuda::Geoopt_cuda::do_quadratic_step(
+  const double trust,
+  const vector<double>& g_new,
+  const vector<double>& Hproj)
+{
+  const int ndata = g_new.size();
+  const int ndata1 = ndata + 1;
+  vector<double> rfo_symm(ndata1 * ndata1);
+  for (int j = 0; j != ndata; ++j)
+  {
+    rfo_symm[ndata1 - 1 + ndata1 * j] = g_new[j];
+    rfo_symm[j + ndata1 * (ndata1 - 1)] = g_new[j];
+    rfo_symm[j + ndata1 * j] = Hproj[j + ndata * j];
+    for (int i = j + 1; i != ndata; ++i)
+    {
+      rfo_symm[i + ndata1 * j] = 0.5 * (Hproj[i + ndata * j] + Hproj[j + ndata * i]);
+      rfo_symm[j + ndata1 * i] = rfo_symm[i + ndata1 * j];
+    }
+  }
+  vector<double> eigenvals1(ndata1);
+  vector<double> eigenvectors1(ndata1 * ndata1);
+  tie(eigenvals1, eigenvectors1) = eigenvalue_solver(ndata1, rfo_symm);
+
+  vector<double> dq(ndata);
+  for (int j = 0; j != ndata; j++)
+  {
+    dq[j] = eigenvectors1[j + ndata1 * 0] / eigenvectors1[ndata + ndata1 * 0];
+  }
+  vector<double> Hdq(ndata);
+  matmul_cublas(ndata, ndata, 1, Hproj.data(), dq.data(), Hdq.data());
+  double dE1, dE2, norm_dq;
+  double *g_new_d, *dq_d, *Hdq_d;
+  cublasHandle_t handle;
+  cublasCreate(&handle);
+  cudaMalloc(&g_new_d, ndata * sizeof(double));
+  cudaMalloc(&dq_d, ndata * sizeof(double));
+  cudaMalloc(&Hdq_d, ndata * sizeof(double));
+  cudaMemcpy(g_new_d, g_new.data(), ndata * sizeof(double), cudaMemcpyHostToDevice);
+  cudaMemcpy(dq_d, dq.data(), ndata * sizeof(double), cudaMemcpyHostToDevice);
+  cudaMemcpy(Hdq_d, Hdq.data(), ndata * sizeof(double), cudaMemcpyHostToDevice);
+  cublasDdot(handle, ndata, g_new_d, 1, dq_d, 1, &dE1);
+  cublasDdot(handle, ndata, Hdq_d, 1, dq_d, 1, &dE2);
+  const double dE = dE1 + 0.5 * dE2;
+  cublasDdot(handle, ndata, dq.data(), 1, dq.data(), 1, &norm_dq);
+  cublasDestroy(handle);
+  cudaFree(g_new_d);
+  cudaFree(dq_d);
+  cudaFree(Hdq_d);
+  norm_dq = sqrt(norm_dq);
+  const bool on_sphere = (norm_dq <= trust) ? false : true;
+
+  return make_tuple(dE, dq, on_sphere);
+}
+
 vector<double> geoopt_routines_with_cuda::Geoopt_cuda::update_Hessian_BFGS(
   const vector<double>& q,
   const vector<double>& best_q,
@@ -269,9 +405,9 @@ vector<double> geoopt_routines_with_cuda::Geoopt_cuda::update_Hessian_BFGS(
 {
   const int ndata = q.size();
   const int ndata2 = ndata * ndata;
+  double *q_h, *g_h, *q_h1, *g_h1, *dH1, *dH2_0, *H_h, *HdH2_0, *HdH2_0H, *dqH;
   cublasHandle_t handle;
   cublasCreate(&handle);
-  double *q_h, *g_h, *q_h1, *g_h1, *dH1, *dH2_0, *H_h, *HdH2_0, *HdH2_0H, *dqH;
   cudaMalloc(&q_h, ndata * sizeof(double));
   cudaMalloc(&g_h, ndata * sizeof(double));
   cudaMalloc(&q_h1, ndata * sizeof(double));

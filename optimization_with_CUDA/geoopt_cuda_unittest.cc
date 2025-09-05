@@ -73,7 +73,7 @@ TEST(test_get_Hproj, test3)
   EXPECT_VECTORS_NEAR(Hproj, Hproj_ref1, tolerance);
 }
 
-TEST(test_update_Hessian_BFGS, test5)
+TEST(test_update_Hessian_BFGS, test4)
 {
   const double tolerance = 1e-10;
   const string filename = "../optimization_with_mkl/data_update_hessian.json";
@@ -89,6 +89,29 @@ TEST(test_update_Hessian_BFGS, test5)
   geoopt_routines_with_cuda::Geoopt_cuda opt_cuda = geoopt_routines_with_cuda::Geoopt_cuda();
   const vector<double> H_updated = opt_cuda.update_Hessian_BFGS(q, best_q, g, best_g, H1);
   EXPECT_VECTORS_NEAR(H_updated, H_updated_ref, tolerance);
+}
+
+TEST(test_do_quadratic_step, test5)
+{
+  const double tolerance = 1e-10;
+  const string filename = "../optimization_with_mkl/data_Hproj.json";
+  const json data = json::parse(std::ifstream(filename));
+  const vector<double> g_new_ref = data["gnew_5"].get<vector<double>>();
+  const vector<double> Hproj_ref = data["Hproj_5"].get<vector<double>>();
+  const int ndata = g_new_ref.size();
+  vector<double> Hproj_ref1 = geoopt_routines_with_cuda::get_colwise_matrix(Hproj_ref, ndata, ndata);
+  const vector<double> dq_ref = data["dq_5"].get<vector<double>>();
+  const vector<double> E3 = data["E_5"].get<vector<double>>();
+  const double dE_ref = E3[0];
+  double dE;
+  vector<double> dq;
+  bool on_sphere;
+  double trust = 0.3;
+  geoopt_routines_with_cuda::Geoopt_cuda opt_cuda = geoopt_routines_with_cuda::Geoopt_cuda();
+  tie(dE, dq, on_sphere) = opt_cuda.do_quadratic_step(trust, g_new_ref, Hproj_ref1);
+  EXPECT_EQ(on_sphere, false);
+  EXPECT_NEAR(dE, dE_ref, tolerance);
+  EXPECT_VECTORS_NEAR(dq, dq_ref, tolerance);
 }
 
 }

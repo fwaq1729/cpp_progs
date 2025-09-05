@@ -24,6 +24,8 @@ namespace geoopt_routines_with_cuda
   const double* h_A, const double* h_B, double* h_C);
 
   std::vector<double> linear_solver(const std::vector<double>& h_A, const std::vector<double>& h_B);
+  std::tuple<std::vector<double>, std::vector<double>>
+    eigenvalue_solver(const int ndata, const std::vector<double>& h_A);
 
   void daxpy_cublas(
   std::vector<double>& h_y,
@@ -46,6 +48,11 @@ namespace geoopt_routines_with_cuda
   const int ndata,
   const std::vector<double>& proj,
   const std::vector<double>& H);
+
+  std::tuple<double, std::vector<double>, bool> do_quadratic_step(
+  const double trust,
+  const std::vector<double>& g_new,
+  const std::vector<double>& Hproj);
 
   std::vector<double> update_Hessian_BFGS(
   const std::vector<double>& q,
