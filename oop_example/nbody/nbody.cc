@@ -1,3 +1,6 @@
+// Author      : Fredy W. Aquino
+// Description : Analytical solutions to Gravitational N-Body problem
+// Date        : 09-16-25
 
 #include <cmath>
 #include <numbers>
