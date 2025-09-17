@@ -1,0 +1,9 @@
+{
+  "case_1" : {"config" : 0, "nbody" : 3, "mass" : [1.0, 2.0, 3.0], "radius" : 2.5, "lambda" : 60.0, "angular_velocity" : 0.2, "dt" : 0.1, "tfinal" : 40.0, "ndata" : 10},
+  "case_2" : {"config" : 1, "nbody" : 3, "mass" : [1.0, 2.0, 3.0], "x_ini" : [2.0, -1.5], "lambda" : 60.0, "angular_velocity" : 0.1, "dt" : 0.1, "tfinal" : 32.0, "ndata" : 10},
+  "case_3" : {"config" : 2, "nbody" : 3, "mass" : [1.0, 2.0, 3.0], "x_ini" : [1.5, -0.7], "lambda" : 60.0, "angular_velocity" : 1.5, "dt" : 0.01, "tfinal" : 5.6, "ndata" : 10},
+  "case_4" : {"config" : 3, "nbody" : 3, "mass" : [1.0, 2.0, 3.0], "x_ini" : [1.5, -0.7], "lambda" : 60.0, "angular_velocity" : 0.2, "dt" : 0.01, "tfinal" : 16.01, "ndata" : 10},
+  "case_5" : {"config" : 4, "nbody" : 4, "mass_3" : 3.5, "r12" : 3.0, "kappa" : 2.0, "nu" : 2, "lambda" : 60.0, "angular_velocity" : 2.0, "dt" : 0.001, "tfinal" : 0.64, "ndata" : 10},
+  "case_6" : {"config" : 4, "nbody" : 4, "mass_3" : 3.5, "r12" : 1.0, "kappa" : 1.5, "nu" : 1, "lambda" : 60.0, "angular_velocity" : 0.4, "dt" : 0.01, "tfinal" : 6.41, "ndata" : 10},
+  "case_7" : {"config" : 5, "nbody" : 6, "mass_i" : 2.0, "radius" : 3.0, "lambda" : 60.0, "angular_velocity" : 0.2, "dt" : 0.06, "tfinal" : 9.6, "ndata" : 10}
+}
