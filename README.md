@@ -8,7 +8,7 @@ iii) Polymorphism
 iv) Abstraction
 v) Encapsulation
 
-2. nbody
+2. oop_example/nbody
 a) Solving numerically Gravitational N-Body problem (system of coupled differential equations of 2nd order)
    using method Runge-Kutta 4.
 b) Generate initial conditions of position and velocity that produce analytical solutions
@@ -26,3 +26,15 @@ Note.- The program generates nbody_output.json file that contains trajectories o
        with respect to center of mass of the system.
        Plotting those trajectories you will see that each of the bodies describe an elliptical
        trajectory.
+
+3. codewars_progs
+Solving eight problems from codewars website
+
+4. optimization_with_mkl
+Implementation of standard geometry optimization algorithm: BFGS using MKL
+(among other algorithms).
+
+5. optimization_with_CUDA
+Implementation of standard geometry optimization algorithm: BFGS using cuBLAS, cuSolver
+(among other algorithms).
+
