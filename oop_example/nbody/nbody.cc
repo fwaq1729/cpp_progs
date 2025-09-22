@@ -54,10 +54,13 @@ double nbody::Nbody::newton_raphson(const array<double, 6>& c)
   const double x0 = 0.0;
   const int niterations = 300;
   double x = x0;
+  const double thresh = 1e-12;
   for (int i = 0; i != niterations; ++i)
   {
-    x -= fderiv(c, x, 0) / fderiv(c, x, 1);
-    // Note.- here I need to put a thresh so that it skips loop
+    const double dx = fderiv(c, x, 0) / fderiv(c, x, 1);
+    if (fabs(dx) < thresh)
+      break;
+    x -= dx;
   }
 
   return x;
@@ -120,12 +123,13 @@ vector<double> nbody::Nbody::gen_vertices(
 {
   const double dbeta = 2.0 * Pi / (double)nbody;
   vector<double> pos(3 * nbody);
+  double beta_i = 0.0;
   for (int i = 0; i != nbody; ++i)
   {
-    const double beta_i = (double)i * dbeta;
     pos[i + nbody * 0] = radius * cos(beta_i);
     pos[i + nbody * 1] = radius * sin(beta_i);
     pos[i + nbody * 2] = 0.0;
+    beta_i += dbeta;
   }
 
   return pos;
@@ -252,9 +256,11 @@ vector<double> nbody::Nbody::get_alpha_for_regular_polygon(
   const int nn = (int)(nc / 2.0 - 1);
   const double dtheta = Pi / (double)nbody;
   double s = 0.0;
+  double theta_j = 0.0;
   for (int j = 1; j <= nn; ++j)
   {
-    s += 1.0 / sin((double)j * dtheta);
+    theta_j += dtheta;
+    s += 1.0 / sin(theta_j);
   }
   const double s1 = nbody % 2 ? 1.0 : 0.0;
   const double beta = Gconst * (s + s1 / 2.0) / 2.0;
