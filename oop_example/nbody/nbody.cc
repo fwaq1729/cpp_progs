@@ -261,7 +261,7 @@ vector<double> nbody::Nbody::get_alpha_for_regular_polygon(
 
   vector<double> mv(nbody);
   for (int i = 0; i != nbody; ++i)
-    mv[i] = Gconst * mass[i] * beta;
+    mv[i] = mass[i] * beta;
 
   return mv;
 }
