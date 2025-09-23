@@ -1,6 +1,24 @@
-// Author      : Fredy W. Aquino
-// Description : Analytical solutions to Gravitational N-Body problem
-// Date        : 09-16-25
+/*
+  This file is part of nbody.
+ 
+  Copyright (C) 2025 Fredy W. Aquino
+ 
+  nbody is free software: you can redistribute it and/or modify it under
+  the terms of the GNU Lesser General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+ 
+  nbody is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU Lesser General Public License for more details.
+ 
+  You should have received a copy of the GNU Lesser General Public License
+  along with nbody.  If not, see <https://www.gnu.org/licenses/>.
+
+  Description : Analytical solutions to Gravitational N-Body problem
+  Date        : 09-16-25
+*/
 
 #include <cmath>
 #include <numbers>
@@ -8,18 +26,18 @@
 #include <array>
 #include <iostream>
 #include <iomanip>
+#include <tuple>
+#include <string>
+#include <vector>
 #include "nbody.h"
-
-using namespace std;
 
 const constexpr static double Gconst = 1.0;
 const constexpr static double Pi = std::numbers::pi;
 
 double nbody::Nbody::fderiv(
-  const array<double, 6>& a,
+  const std::array<double, 6>& a,
   const double xi,
-  const int m)
-{
+  const int m) {
 // description:
 //   find m-th derivative at x = xi of p(x)
 //   multiplied by c(m) : c(m) * d^m / dx^m p(x)  (x = xi)
@@ -28,16 +46,14 @@ double nbody::Nbody::fderiv(
   const int n = a.size() - 1;
   const int m1 = m + 1;
   const int n1 = n + 1;
-  vector<double> l(n1 * n1);
+  std::vector<double> l(n1 * n1);
 
   for (int k = 1; k <= n; ++k)
     l[0 * n1 + k] = a[k];
 
-  for (int k = 1; k <= m1; ++k)
-  {
+  for (int k = 1; k <= m1; ++k) {
     l[k * n1 + 0] = (k == 1) ? a[0] :  l[(k - 1) * n1 + 0];
-    for (int j = 1; j <= n - k + 1; ++j)
-    {
+    for (int j = 1; j <= n - k + 1; ++j) {
       l[k * n1 + j] = l[(k - 1) * n1 + j] + xi * l[k * n1 + j - 1];
     }
   }
@@ -45,8 +61,7 @@ double nbody::Nbody::fderiv(
   return l[m1 * n1 + n - m1 + 1];
 }
 
-double nbody::Nbody::newton_raphson(const array<double, 6>& c)
-{
+double nbody::Nbody::newton_raphson(const std::array<double, 6>& c) {
 // Description:
 //   Finds root x of P(x) = 0 using Newton-Raphson method
 //   P(X) = c[0] X^N + c[1] X^(N-1) + ...+ c[N-1] X + c[N] = 0
@@ -55,8 +70,7 @@ double nbody::Nbody::newton_raphson(const array<double, 6>& c)
   const int niterations = 300;
   double x = x0;
   const double thresh = 1e-12;
-  for (int i = 0; i != niterations; ++i)
-  {
+  for (int i = 0; i != niterations; ++i) {
     const double dx = fderiv(c, x, 0) / fderiv(c, x, 1);
     if (fabs(dx) < thresh)
       break;
@@ -67,16 +81,14 @@ double nbody::Nbody::newton_raphson(const array<double, 6>& c)
 }
 
 void nbody::Nbody::positions_wrt_cm(
-  vector<double>& pos,
-  const vector<double>& mass)
-{
+  std::vector<double>& pos,
+  const std::vector<double>& mass) {
   const int nbody = pos.size() / 3;
   double total_mass = 0.0;
   for (int i = 0; i != nbody; ++i)
     total_mass += mass[i];
-  array<double, 3> rcm{0.0, 0.0, 0.0}; // rcm, center-of-mass
-  for (int k = 0; k != 3; ++k)
-  {
+  std::array<double, 3> rcm{0.0, 0.0, 0.0};  // rcm, center-of-mass
+  for (int k = 0; k != 3; ++k) {
     for (int i = 0; i != nbody; ++i)
       rcm[k] += mass[i] * pos[i + nbody * k];
     rcm[k] /= total_mass;
@@ -86,27 +98,26 @@ void nbody::Nbody::positions_wrt_cm(
       pos[i + nbody * k] -= rcm[k];
 }
 
-tuple<double, vector<double>> nbody::Nbody::linear_configuration(
+std::tuple<double, std::vector<double>> nbody::Nbody::linear_configuration(
   const int config,
-  const vector<double>& r_ini,
-  const vector<double>& mass)
-{
+  const std::vector<double>& r_ini,
+  const std::vector<double>& mass) {
 // Purpose: generate three body linear configuration
 // Note.- Bodies are located in X-axis
-  array<int, 3> k;
-  if (config == 1) { k[0] = 3 - 1; k[1] = 2 - 1; k[2] = 1 - 1;} // config. 321
-  if (config == 2) { k[0] = 2 - 1; k[1] = 3 - 1; k[2] = 1 - 1;} // config. 231
-  if (config == 3) { k[0] = 2 - 1; k[1] = 1 - 1; k[2] = 3 - 1;} // config. 213
-  const array<double, 6> a{mass[k[2]] + mass[k[1]],
-                           3.0 * mass[k[2]] + 2.0 * mass[k[1]],
-                           3.0 * mass[k[2]] + mass[k[1]],
-                           -(mass[k[1]] + 3.0 * mass[k[0]]),
-                           -(2.0 * mass[k[1]] + 3.0 * mass[k[0]]),
-                           -(mass[k[1]] + mass[k[0]])};
-  const double x = newton_raphson(a); // Find x for P(x) = 0
+// config = 1 (321), 2 (231), 3 (213)
+  std::array<int, 3> k{(config == 1) ? (3 - 1) : 2 - 1,
+                       (config == 1) ? (2 - 1) : (config == 2) ? 3 - 1 : 1 - 1,
+                       (config == 1 || config == 2) ? (1 - 1) : 3 - 1};
+  const std::array<double, 6> a{mass[k[2]] + mass[k[1]],
+                                3.0 * mass[k[2]] + 2.0 * mass[k[1]],
+                                3.0 * mass[k[2]] + mass[k[1]],
+                                -(mass[k[1]] + 3.0 * mass[k[0]]),
+                                -(2.0 * mass[k[1]] + 3.0 * mass[k[0]]),
+                                -(mass[k[1]] + mass[k[0]])};
+  const double x = newton_raphson(a);  // Find x for P(x) = 0
   // condition: pos[k[1]] < pos[k[2]] < pos[k[3}],  for x-coordinate
   const int nbody = 3;
-  vector<double> pos(3 * nbody);
+  std::vector<double> pos(3 * nbody);
   pos[0] = r_ini[0];
   pos[1] = r_ini[1];
   // Note.- only work out initial position along X-axis
@@ -117,15 +128,13 @@ tuple<double, vector<double>> nbody::Nbody::linear_configuration(
   return make_tuple(x, pos);
 }
 
-vector<double> nbody::Nbody::gen_vertices(
+std::vector<double> nbody::Nbody::gen_vertices(
   const double radius,
-  const int nbody)
-{
-  const double dbeta = 2.0 * Pi / (double)nbody;
-  vector<double> pos(3 * nbody);
+  const int nbody) {
+  const double dbeta = 2.0 * Pi / static_cast<double>(nbody);
+  std::vector<double> pos(3 * nbody);
   double beta_i = 0.0;
-  for (int i = 0; i != nbody; ++i)
-  {
+  for (int i = 0; i != nbody; ++i) {
     pos[i + nbody * 0] = radius * cos(beta_i);
     pos[i + nbody * 1] = radius * sin(beta_i);
     pos[i + nbody * 2] = 0.0;
@@ -135,29 +144,28 @@ vector<double> nbody::Nbody::gen_vertices(
   return pos;
 }
 
-tuple<vector<double>, vector<double>> nbody::Nbody::gen_vertices_for_4bodies(
-  const double rbase, // = r_{12}
-  const double kappa, // kappa >= 1
-  const double mass3, // third mass value
-  const int selec_nu) // = 1, 2
-{
+std::tuple<std::vector<double>, std::vector<double>>
+  nbody::Nbody::gen_vertices_for_4bodies(
+  const double rbase,    // = r_{12}
+  const double kappa,    // kappa >= 1
+  const double mass3,    // third mass value
+  const int selec_nu) {  // = 1, 2
   const double k3 = kappa * kappa * kappa;
   const double ksq = 1.0 + kappa * kappa;
   const double kspq = exp(1.5 * log(fabs(ksq)));
   const double f = (k3 * kspq + 1.0) / (k3 + kspq);
   const double radic = f * f - 1.0;
-  if (radic < 0)
-  {
-    ostringstream tag;
+  if (radic < 0) {
+    std::ostringstream tag;
     tag << "trapezoidal configuration:: f^2 < 1, f = "
-        << setw(6) << setprecision(2) << fixed << f;
-    throw runtime_error(tag.str());
+        << std::setw(6) << std::setprecision(2) << std::fixed << f;
+    throw std::runtime_error(tag.str());
   }
   const double coef = (selec_nu == 1) ? -1.0 : (selec_nu == 2) ? 1.0 : 0.0;
-  if (coef == 0.0)
-  {
-    const string tag = "error selec_nu ne 1 or 2, selec_nu = " + to_string(selec_nu);
-    throw runtime_error(tag);
+  if (coef == 0.0) {
+    const std::string tag = "error selec_nu ne 1 or 2, selec_nu = " +
+                            std::to_string(selec_nu);
+    throw std::runtime_error(tag);
   }
   const double nu = f + coef * sqrt(radic);
   const double rnu_1 = exp(-0.666666667 * log(fabs(nu)));
@@ -165,26 +173,25 @@ tuple<vector<double>, vector<double>> nbody::Nbody::gen_vertices_for_4bodies(
   const double rnu_2 = exp(-0.333333333 * log(fabs(nu)));
   const double radicl = exp(0.5 * log(fabs(ksq)));
   const double r13 = rbase * radicl * rnu_2;
-  //const double r23 = rbase * kappa * rnu_2;
+  // const double r23 = rbase * kappa * rnu_2;
   const double r12 = rbase;
 
   const double tq = (r12 - r34) / 2.0;
   const double rt = sqrt(r13 * r13 - (r12 - tq) * (r12 - tq));
-  const vector<double> pos{0.0, r12, r12 - tq, tq,   // X
-                           0.0, 0.0, rt      , rt,   // Y
-                           0.0, 0.0, 0.0     , 0.0}; // Z
+  const std::vector<double> pos{0.0, r12, r12 - tq, tq,    // X
+                                0.0, 0.0, rt      , rt,    // Y
+                                0.0, 0.0, 0.0     , 0.0};  // Z
   const double g = (nu - 1.0 / kspq) / (1.0 - nu / kspq) / rnu_2;
-  const vector<double> mass{mass3 * g, mass3 * g, mass3, mass3};
+  const std::vector<double> mass{mass3 * g, mass3 * g, mass3, mass3};
 
   return make_tuple(mass, pos);
 }
 
-vector<double> nbody::Nbody::get_alpha_for_3bodies(
-  const vector<double>& mass)
-{
+std::vector<double> nbody::Nbody::get_alpha_for_3bodies(
+  const std::vector<double>& mass) {
   const double mt = mass[0] + mass[1] + mass[2];
   const double mt2 = mt * mt;
-  vector<double> mv(3);
+  std::vector<double> mv(3);
   const double m2_1 = mass[0] * mass[0];
   const double m2_2 = mass[1] * mass[1];
   const double m2_3 = mass[2] * mass[2];
@@ -198,21 +205,19 @@ vector<double> nbody::Nbody::get_alpha_for_3bodies(
   return mv;
 }
 
-vector<double> nbody::Nbody::get_alpha_for_linear_configuration(
+std::vector<double> nbody::Nbody::get_alpha_for_linear_configuration(
   const int config,
   const double x,
-  const vector<double>& mass)
-{
-  array<int, 3> k = {0, 0, 0};
-  if (config == 1) { k[0] = 3 - 1; k[1] = 2 - 1; k[2] = 1 - 1;} // config. 321
-  if (config == 2) { k[0] = 2 - 1; k[1] = 3 - 1; k[2] = 1 - 1;} // config. 231
-  if (config == 3) { k[0] = 2 - 1; k[1] = 1 - 1; k[2] = 3 - 1;} // config. 213
+  const std::vector<double>& mass) {
+// config = 1 (321), 2 (231), 3 (213)
+  std::array<int, 3> k{(config == 1) ? (3 - 1) : 2 - 1,
+                       (config == 1) ? (2 - 1) : (config == 2) ? 3 - 1 : 1 - 1,
+                       (config == 1 || config == 2) ? (1 - 1) : 3 - 1};
   const double total_mass = mass[0] + mass[1] + mass[2];
-  array<double, 3> v{1 + x, -x, x / (1.0 + x)};
+  std::array<double, 3> v{1 + x, -x, x / (1.0 + x)};
 
-  vector<double> mv(3);
-  for (int i = 0; i != 3; ++i)
-  {
+  std::vector<double> mv(3);
+  for (int i = 0; i != 3; ++i) {
     const int i1 = (i == 0) ? k[1] : k[2];
     const int i2 = (i == 2) ? k[1] : k[0];
     double s = (mass[i1] + mass[i2] * v[i]) / total_mass;
@@ -225,47 +230,43 @@ vector<double> nbody::Nbody::get_alpha_for_linear_configuration(
   return mv;
 }
 
-vector<double> nbody::Nbody::get_alpha_for_4bodies(
-  const vector<double>& pos,
-  const vector<double>& mass)
-{
+std::vector<double> nbody::Nbody::get_alpha_for_4bodies(
+  const std::vector<double>& pos,
+  const std::vector<double>& mass) {
   const int nbody = pos.size() / 3;
-  const vector<double> acel = get_forces(mass, pos);
-  vector<double> mv(nbody);
-  for (int i = 0; i != nbody; ++i)
-  {
+  const std::vector<double> acel = get_forces(mass, pos);
+  std::vector<double> mv(nbody);
+  for (int i = 0; i != nbody; ++i) {
     double acum = 0.0;
-    for (int j = 0; j != 3; ++j)
-    {
+    for (int j = 0; j != 3; ++j) {
       acum += pos[i + nbody * j] * acel[i + nbody * j];
     }
     const int ind_x = i + nbody * 0;
     const int ind_y = i + nbody * 1;
-    const double dist_i = sqrt(pos[ind_x] * pos[ind_x] + pos[ind_y] * pos[ind_y]);
+    const double dist_i = sqrt(pos[ind_x] * pos[ind_x] +
+                               pos[ind_y] * pos[ind_y]);
     mv[i] = -Gconst * dist_i * acum;
   }
 
   return mv;
 }
 
-vector<double> nbody::Nbody::get_alpha_for_regular_polygon(
-  const vector<double>& mass)
-{
+std::vector<double> nbody::Nbody::get_alpha_for_regular_polygon(
+  const std::vector<double>& mass) {
   const int nbody = mass.size();
   const double nc = nbody % 2 ? nbody : nbody + 1;
-  const int nn = (int)(nc / 2.0 - 1);
-  const double dtheta = Pi / (double)nbody;
+  const int nn = static_cast<int>(nc / 2.0 - 1);
+  const double dtheta = Pi / static_cast<double>(nbody);
   double s = 0.0;
   double theta_j = 0.0;
-  for (int j = 1; j <= nn; ++j)
-  {
+  for (int j = 1; j <= nn; ++j) {
     theta_j += dtheta;
     s += 1.0 / sin(theta_j);
   }
   const double s1 = nbody % 2 ? 1.0 : 0.0;
   const double beta = Gconst * (s + s1 / 2.0) / 2.0;
 
-  vector<double> mv(nbody);
+  std::vector<double> mv(nbody);
   for (int i = 0; i != nbody; ++i)
     mv[i] = mass[i] * beta;
 
@@ -273,7 +274,7 @@ vector<double> nbody::Nbody::get_alpha_for_regular_polygon(
 }
 
 void nbody::Nbody::get_ini_posvel(
-  const nlohmann::json& input_pars)
+  const nlohmann::json& input_pars) {
 // config = 0, equilateral triangle
 //        = 1,2,3 en linear configuration types 321,231,213 respectively
 //        = 4 four bodies in isosceles-trapezoid
@@ -282,30 +283,28 @@ void nbody::Nbody::get_ini_posvel(
 // lambda, relative angle between vector position and vector velocity
 //       (same angle for all bodies)
 // thetap, angular velocity (same for all bodies)
-{
   const int config = input_pars["config"];
   const int nbody = input_pars["nbody"];
-  vector<double> mv(nbody);
-  switch(config)
-  {
-    case 0: // equilateral triangle configuration
+  std::vector<double> mv(nbody);
+  switch (config) {
+    case 0:  // equilateral triangle configuration
       {
-        mass_ = input_pars["mass"].get<vector<double>>();
+        mass_ = input_pars["mass"].get<std::vector<double>>();
         const double radius = input_pars["radius"];
         pos_ = gen_vertices(radius, nbody);
         mv = get_alpha_for_3bodies(mass_);
       }
       break;
-    case 1: case 2: case 3: // linear configuration (types: 321,231,213)
+    case 1: case 2: case 3:  // linear configuration (types: 321,231,213)
       {
         double x;
-        mass_ = input_pars["mass"].get<vector<double>>();
-        const vector<double> x_ini = input_pars["x_ini"];
+        mass_ = input_pars["mass"].get<std::vector<double>>();
+        const std::vector<double> x_ini = input_pars["x_ini"];
         tie(x, pos_) = linear_configuration(config, x_ini, mass_);
         mv = get_alpha_for_linear_configuration(config, x, mass_);
       }
       break;
-    case 4: // isosceles trapezoid configuration (4 bodies)
+    case 4:  // isosceles trapezoid configuration (4 bodies)
       {
         const double rbase = input_pars["r12"];
         const double mass_3 = input_pars["mass_3"];
@@ -314,7 +313,7 @@ void nbody::Nbody::get_ini_posvel(
         tie(mass_, pos_) = gen_vertices_for_4bodies(rbase, kappa, mass_3, nu);
       }
       break;
-    case 5: // regular polygon configuration
+    case 5:  // regular polygon configuration
       {
         const double mass_i = input_pars["mass_i"];
         const double radius = input_pars["radius"];
@@ -327,17 +326,16 @@ void nbody::Nbody::get_ini_posvel(
 
   positions_wrt_cm(pos_, mass_);
 
-  if (config == 4)
-  {
+  if (config == 4) {
     mv = get_alpha_for_4bodies(pos_, mass_);
   }
 
   const double lambda = input_pars["lambda"];
-  for (int i = 0; i != nbody; ++i)
-  {
+  for (int i = 0; i != nbody; ++i) {
     const int ind_x = i + nbody * 0;
     const int ind_y = i + nbody * 1;
-    const double md = sqrt(pos_[ind_x] * pos_[ind_x] + pos_[ind_y] * pos_[ind_y]);
+    const double md = sqrt(pos_[ind_x] * pos_[ind_x] +
+                           pos_[ind_y] * pos_[ind_y]);
     const double to_c_alpha = sqrt(mv[i] / md) / md * sin(lambda * Pi /180.0);
     // Note.- c_alpha[i] (i = 0, nbody - 1) should be equal
     c_alpha_[i] = to_c_alpha;
@@ -346,31 +344,30 @@ void nbody::Nbody::get_ini_posvel(
   const double thetap = input_pars["angular_velocity"];
   const double thetap_min = -dtheta0;
   const double thetap_max =  dtheta0;
-  if (!(thetap >= thetap_min && thetap <= thetap_max))
-  {
+  if (!(thetap >= thetap_min && thetap <= thetap_max)) {
     std::ostringstream os;
     os << "initial angular velocity, thetap not in range: ["
-       << setw(8) << setprecision(3) << fixed << thetap_min << ","
-       << setw(8) << setprecision(3) << fixed << thetap_max << "]";
-    throw runtime_error(os.str());
+       << std::setw(8) << std::setprecision(3)
+       << std::fixed << thetap_min << ","
+       << std::setw(8) << std::setprecision(3)
+       << std::fixed << thetap_max << "]";
+    throw std::runtime_error(os.str());
   }
   vel_ = get_velocity_i(lambda, thetap, pos_);
 }
 
-vector<double> nbody::Nbody::get_velocity_i(
+std::vector<double> nbody::Nbody::get_velocity_i(
   const double lambda,
   const double thetap,
-  const vector<double>& pos)
-{
+  const std::vector<double>& pos) {
   const double ang = lambda * Pi / 180.0;
   const int nbody = pos.size() / 3;
-  vector<double> v(nbody * 3);
-  for (int i = 0; i < nbody; ++i)
-  {
+  std::vector<double> v(nbody * 3);
+  for (int i = 0; i < nbody; ++i) {
     const int ind_x = i + nbody * 0;
     const int ind_y = i + nbody * 1;
     const double ri = sqrt(pos[ind_x] * pos[ind_x] + pos[ind_y] * pos[ind_y]);
-    const array<double, 2> u{pos[ind_x] / ri, pos[ind_y] / ri};
+    const std::array<double, 2> u{pos[ind_x] / ri, pos[ind_y] / ri};
     const double mod_vel = ri * thetap / sin(ang);
     v[ind_x] = mod_vel * (u[0] * cos(ang) - u[1] * sin(ang));
     v[ind_y] = mod_vel * (u[1] * cos(ang) + u[0] * sin(ang));
@@ -380,28 +377,26 @@ vector<double> nbody::Nbody::get_velocity_i(
 }
 
 void nbody::Nbody::rungekutta_for_nbody(
-  vector<double>& r,
-  vector<double>& v,
-  const vector<double>& mass,
+  std::vector<double>& r,
+  std::vector<double>& v,
+  const std::vector<double>& mass,
   const double dt,
-  const int rk_order)
-{
+  const int rk_order) {
   const int nbody = r.size() / 3;
-  array<double,4> c{0.0, 0.0, 0.0, 0.0};
-  array<double,4> d{0.0, 0.0, 0.0, 0.0};
-  switch(rk_order)
-  {
-    case 1: // rk_order=1; Euler's method
+  std::array<double, 4> c{0.0, 0.0, 0.0, 0.0};
+  std::array<double, 4> d{0.0, 0.0, 0.0, 0.0};
+  switch (rk_order) {
+    case 1:  // rk_order=1; Euler's method
       d[0] = 0.0;
       c[0] = 1.0;
       break;
-    case 2: // rk_order=2; Improved Euler's method
+    case 2:  // rk_order=2; Improved Euler's method
       d[0] = 0.0;
       d[1] = 1.0 / 2.0;
       c[0] = 0.0;
       c[1] = 1.0;
       break;
-    case 3: // rk_order = 3
+    case 3:  // rk_order = 3
       d[0] = 0.0;
       d[1] = 1.0 / 2.0;
       d[2] = 3.0 / 4.0;
@@ -409,7 +404,7 @@ void nbody::Nbody::rungekutta_for_nbody(
       c[1] = 3.0 / 9.0;
       c[2] = 4.0 / 9.0;
       break;
-    case 4: // rk_order = 4
+    case 4:  // rk_order = 4
       d[0] = 0.0;
       d[1] = 1.0 / 2.0;
       d[2] = 1.0 / 2.0;
@@ -419,32 +414,27 @@ void nbody::Nbody::rungekutta_for_nbody(
       c[2] = 2.0 / 6.0;
       c[3] = 1.0 / 6.0;
       break;
-  };
+  }
 
-  vector<double> r0(3 * nbody);
-  vector<double> v0(3 * nbody);
-  copy_n(r.data(), r.size(), r0.data());
-  copy_n(v.data(), v.size(), v0.data());
-  vector<double> dr(3 * nbody);
-  vector<double> dv(3 * nbody);
-  vector<double> k1(3 * nbody);
-  vector<double> k2(3 * nbody);
-  for (int k = 0; k < rk_order; ++k)
-  {
-    for (int i = 0; i < nbody; ++i)
-    {
-      for (int j = 0; j < 3; ++j)
-      {
+  std::vector<double> r0(3 * nbody);
+  std::vector<double> v0(3 * nbody);
+  std::copy_n(r.data(), r.size(), r0.data());
+  std::copy_n(v.data(), v.size(), v0.data());
+  std::vector<double> dr(3 * nbody);
+  std::vector<double> dv(3 * nbody);
+  std::vector<double> k1(3 * nbody);
+  std::vector<double> k2(3 * nbody);
+  for (int k = 0; k < rk_order; ++k) {
+    for (int i = 0; i < nbody; ++i) {
+      for (int j = 0; j < 3; ++j) {
         const int ind = i + nbody * j;
         k1[ind] = r0[ind] + dr[ind] * d[k];
         k2[ind] = v0[ind] + dv[ind] * d[k];
       }
     }
-    const vector<double> acel = get_forces(mass, k1);
-    for (int i = 0; i < nbody; ++i)
-    {
-      for (int j = 0; j < 3; ++j)
-      {
+    const std::vector<double> acel = get_forces(mass, k1);
+    for (int i = 0; i < nbody; ++i) {
+      for (int j = 0; j < 3; ++j) {
         const int ind = i + nbody * j;
         dr[ind] = dt * k2[ind];
         dv[ind] = dt * acel[ind];
@@ -455,32 +445,29 @@ void nbody::Nbody::rungekutta_for_nbody(
   }
 }
 
-vector<double> nbody::Nbody::get_forces(
-  const vector<double>& mass,
-  const vector<double>& pos)
-{
+std::vector<double> nbody::Nbody::get_forces(
+  const std::vector<double>& mass,
+  const std::vector<double>& pos) {
   const int nbody = pos.size() / 3;
-  vector<double> forces(3 * nbody);
-  for (int i = 0; i != nbody; ++i)
-  {
-    array<double, 3> ac{0.0, 0.0, 0.0};
-    for (int j = 0; j != nbody; ++j)
-    {
-      if (i != j)
-      {
-        const array<double, 3> rij{pos[0 * nbody + j] - pos[0 * nbody + i],
-                                   pos[1 * nbody + j] - pos[1 * nbody + i],
-                                   pos[2 * nbody + j] - pos[2 * nbody + i]};
-        const double rij_mod0 = rij[0] * rij[0] + rij[1] * rij[1] + rij[2] * rij[2];
+  std::vector<double> forces(3 * nbody);
+  for (int i = 0; i != nbody; ++i) {
+    std::array<double, 3> ac{0.0, 0.0, 0.0};
+    for (int j = 0; j != nbody; ++j) {
+      if (i != j) {
+        const std::array<double, 3> rij{
+          pos[0 * nbody + j] - pos[0 * nbody + i],
+          pos[1 * nbody + j] - pos[1 * nbody + i],
+          pos[2 * nbody + j] - pos[2 * nbody + i]};
+        const double rij_mod0 = rij[0] * rij[0] +
+                                rij[1] * rij[1] +
+                                rij[2] * rij[2];
         const double rij3 = sqrt(rij_mod0 * rij_mod0 * rij_mod0);
-        for (int k = 0; k != 3; ++k)
-        {
+        for (int k = 0; k != 3; ++k) {
           ac[k] += mass[j] * rij[k] / rij3;
         }
       }
     }
-    for (int k = 0; k != 3; ++k)
-    {
+    for (int k = 0; k != 3; ++k) {
       forces[i + k * nbody] = Gconst * ac[k];
     }
   }
@@ -491,32 +478,29 @@ vector<double> nbody::Nbody::get_forces(
 double nbody::Nbody::get_excentricity(
   const double lambda,
   const double c_alpha,
-  const double theta_p)
-{
+  const double theta_p) {
   const double c1 = theta_p / sin(Pi / 180.0 * lambda) / 2.0;
   const double c3 = theta_p / c_alpha;
 
   return sqrt(1.0 + 2.0 * (c1 - c_alpha) * c3 * c3);
 }
 
-tuple<vector<double>, vector<double>> nbody::Nbody::check_angular_momentum(
-  const vector<double>& pos,
-  const vector<double>& vel,
-  const vector<double>& mass)
-{
+std::tuple<std::vector<double>, std::vector<double>>
+  nbody::Nbody::check_angular_momentum(
+  const std::vector<double>& pos,
+  const std::vector<double>& vel,
+  const std::vector<double>& mass) {
   const int nbody = pos.size() / 3;
-  vector<double> ang(3 * nbody);
-  vector<double> total_ang(3);
-  for (int i = 0; i != nbody; ++i)
-  {
+  std::vector<double> ang(3 * nbody);
+  std::vector<double> total_ang(3);
+  for (int i = 0; i != nbody; ++i) {
     ang[i + nbody * 0] = mass[i] * (pos[i + nbody * 1] * vel[i +nbody * 2] -
                                     pos[i + nbody * 2] * vel[i +nbody * 1]);
     ang[i + nbody * 1] = mass[i] * (pos[i + nbody * 2] * vel[i +nbody * 0] -
                                     pos[i + nbody * 0] * vel[i +nbody * 2]);
     ang[i + nbody * 2] = mass[i] * (pos[i + nbody * 0] * vel[i +nbody * 1] -
                                     pos[i + nbody * 1] * vel[i +nbody * 0]);
-    for (int k = 0; k != 3; ++k)
-    {
+    for (int k = 0; k != 3; ++k) {
       total_ang[k] += ang[i + nbody * k];
     }
   }
@@ -525,25 +509,25 @@ tuple<vector<double>, vector<double>> nbody::Nbody::check_angular_momentum(
 }
 
 double nbody::Nbody::check_total_energy(
-  const vector<double>& pos,
-  const vector<double>& vel,
-  const vector<double>& mass)
-{
+  const std::vector<double>& pos,
+  const std::vector<double>& vel,
+  const std::vector<double>& mass) {
   double energy = 0.0;
   const int nbody = pos.size() / 3;
-  for (int i = 0; i != nbody; ++i)
-  {
+  for (int i = 0; i != nbody; ++i) {
     const double vel_i2 = vel[i + nbody * 0] * vel[i + nbody * 0] +
                           vel[i + nbody * 1] * vel[i + nbody * 1] +
                           vel[i + nbody * 2] * vel[i + nbody * 2];
     const double kinetic_i = mass[i] / 2.0 * vel_i2;
     double potential_energy_i = 0.0;
-    for (int j = 0; j != i; ++j)
-    {
-      const array<double, 3> rij{pos[0 * nbody + j] - pos[0 * nbody + i],
-                                 pos[1 * nbody + j] - pos[1 * nbody + i],
-                                 pos[2 * nbody + j] - pos[2 * nbody + i]};
-      const double rij_mod0 = sqrt(rij[0] * rij[0] + rij[1] * rij[1] + rij[2] * rij[2]);
+    for (int j = 0; j != i; ++j) {
+      const std::array<double, 3> rij{
+        pos[0 * nbody + j] - pos[0 * nbody + i],
+        pos[1 * nbody + j] - pos[1 * nbody + i],
+        pos[2 * nbody + j] - pos[2 * nbody + i]};
+      const double rij_mod0 = sqrt(rij[0] * rij[0] +
+                                   rij[1] * rij[1] +
+                                   rij[2] * rij[2]);
       potential_energy_i -= mass[j] / rij_mod0;
     }
     potential_energy_i *= Gconst * mass[i];
@@ -554,54 +538,51 @@ double nbody::Nbody::check_total_energy(
 
 void nbody::Nbody::prn_vector(
   std::ofstream& ou,
-  const string tag,
-  const vector<double>& vec)
-{
+  const std::string tag,
+  const std::vector<double>& vec) {
   ou << "  \"" + tag + "\" : [";
-  for (int j = 0; j != (int)vec.size(); ++j)
-  {
-    if (j != (int)(vec.size() - 1))
-    {
-      ou << setw(15) << setprecision(8) << scientific << vec[j] << ",";
-    } else
-    {
-      ou << setw(15) << setprecision(8) << scientific << vec[j] << "],\n";
+  for (int j = 0; j != static_cast<int>(vec.size()); ++j) {
+    if (j != static_cast<int>(vec.size() - 1)) {
+      ou << std::setw(15) << std::setprecision(8)
+         << std::scientific << vec[j] << ",";
+    } else {
+      ou << std::setw(15) << std::setprecision(8)
+         << std::scientific << vec[j] << "],\n";
     }
   }
 }
 
-void nbody::Nbody::nbody_simulator()
-{
+void nbody::Nbody::nbody_simulator() {
   get_ini_posvel(input_pars_);
   const double dt = input_pars_["dt"];
   const double tfinal = input_pars_["tfinal"];
   const int nsteps = tfinal / dt;
   std::ofstream ou("nbody_output.json");
-  if (!ou.is_open())
-  {
-    throw runtime_error("file nbody_output.json could not be opened");
+  if (!ou.is_open()) {
+    throw std::runtime_error("file nbody_output.json could not be opened");
   }
   ou << "{\n";
   const int ndata = input_pars_["ndata"];
-  if (ndata > nsteps)
-  {
-    const string tag = "ndata > nsteps, (ndata,nsteps) = " + to_string(ndata) + "," + to_string(nsteps) + ")";
-    throw runtime_error(tag);
+  if (ndata > nsteps) {
+    const std::string tag = "ndata > nsteps, (ndata,nsteps) = " +
+                            std::to_string(ndata) + "," +
+                            std::to_string(nsteps) + ")";
+    throw std::runtime_error(tag);
   }
   double t = 0.0;
-  for (int i = 0; i != nsteps; ++i)
-  {
-    const string tag = "\"step_" + to_string(i) + "\" : {\n";
+  for (int i = 0; i != nsteps; ++i) {
+    const std::string tag = "\"step_" + std::to_string(i) + "\" : {\n";
     rungekutta_for_nbody(pos_, vel_, mass_, dt, 4);
-    vector<double> total_ang;
-    vector<double> ang;
+    std::vector<double> total_ang;
+    std::vector<double> ang;
     const double energy = check_total_energy(pos_, vel_, mass_);
     tie(total_ang, ang) = check_angular_momentum(pos_, vel_, mass_);
-    if (i < ndata)
-    {
+    if (i < ndata) {
       energy_[i] = energy;
-      copy_n(total_ang.data(), total_ang.size(), angular_momentum_.data() + i * total_ang.size());
-      copy_n(ang.data(), ang.size(), angular_momentum_i_.data() + i * ang.size());
+      std::copy_n(total_ang.data(), total_ang.size(),
+                  angular_momentum_.data() + i * total_ang.size());
+      std::copy_n(ang.data(), ang.size(),
+                  angular_momentum_i_.data() + i * ang.size());
     }
     // output to a json file:
     ou << tag;
@@ -610,7 +591,8 @@ void nbody::Nbody::nbody_simulator()
     prn_vector(ou, "angular_momentum", total_ang);
     prn_vector(ou, "angular_momentum_i", ang);
     ou << "  \"energy\" : "
-       << setw(15) << setprecision(8) << scientific << energy << "\n";
+       << std::setw(15) << std::setprecision(8)
+       << std::scientific << energy << "\n";
     if (i != nsteps - 1)
       ou << "},\n";
     else
@@ -622,9 +604,10 @@ void nbody::Nbody::nbody_simulator()
 }
 
 nbody::Nbody::Nbody(const nlohmann::json input_pars0) :
-  input_pars_(input_pars0), nbody_(input_pars0["nbody"]), ndata_(input_pars0["ndata"]),
+  input_pars_(input_pars0), nbody_(input_pars0["nbody"]),
+  ndata_(input_pars0["ndata"]),
   c_alpha_(nbody_), pos_(3 * nbody_), vel_(3 * nbody_), mass_(nbody_),
-  energy_(ndata_), angular_momentum_(3 * ndata_), angular_momentum_i_(3 * ndata_ * nbody_)
-{
+  energy_(ndata_), angular_momentum_(3 * ndata_),
+  angular_momentum_i_(3 * ndata_ * nbody_) {
   nbody_simulator();
 }
