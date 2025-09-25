@@ -29,10 +29,24 @@
 #include <tuple>
 #include <string>
 #include <vector>
+#include <map>
 #include "nbody.h"
 
 const constexpr static double Gconst = 1.0;
 const constexpr static double Pi = std::numbers::pi;
+
+namespace nbody_common {
+const std::map<int, std::vector<double>> c_rk = {
+{1, {1.0}},
+{2, {0.0, 1.0}},
+{3, {2.0 / 9.0, 3.0 / 9.0, 4.0 / 9.0}},
+{4, {1.0 / 6.0, 2.0 / 6.0, 2.0 / 6.0, 1.0 / 6.0}}};
+const std::map<int, std::vector<double>> d_rk = {
+{1, {0.0}},
+{2, {0.0, 0.5}},
+{3, {0.0, 0.5, 0.75}},
+{4, {0.0, 0.5, 0.5, 1.0}}};
+}  // namespace nbody_common
 
 double nbody::Nbody::fderiv(
   const std::array<double, 6>& a,
@@ -383,39 +397,6 @@ void nbody::Nbody::rungekutta_for_nbody(
   const double dt,
   const int rk_order) {
   const int nbody = r.size() / 3;
-  std::array<double, 4> c{0.0, 0.0, 0.0, 0.0};
-  std::array<double, 4> d{0.0, 0.0, 0.0, 0.0};
-  switch (rk_order) {
-    case 1:  // rk_order=1; Euler's method
-      d[0] = 0.0;
-      c[0] = 1.0;
-      break;
-    case 2:  // rk_order=2; Improved Euler's method
-      d[0] = 0.0;
-      d[1] = 1.0 / 2.0;
-      c[0] = 0.0;
-      c[1] = 1.0;
-      break;
-    case 3:  // rk_order = 3
-      d[0] = 0.0;
-      d[1] = 1.0 / 2.0;
-      d[2] = 3.0 / 4.0;
-      c[0] = 2.0 / 9.0;
-      c[1] = 3.0 / 9.0;
-      c[2] = 4.0 / 9.0;
-      break;
-    case 4:  // rk_order = 4
-      d[0] = 0.0;
-      d[1] = 1.0 / 2.0;
-      d[2] = 1.0 / 2.0;
-      d[3] = 1.0;
-      c[0] = 1.0 / 6.0;
-      c[1] = 2.0 / 6.0;
-      c[2] = 2.0 / 6.0;
-      c[3] = 1.0 / 6.0;
-      break;
-  }
-
   std::vector<double> r0(3 * nbody);
   std::vector<double> v0(3 * nbody);
   std::copy_n(r.data(), r.size(), r0.data());
@@ -428,8 +409,8 @@ void nbody::Nbody::rungekutta_for_nbody(
     for (int i = 0; i < nbody; ++i) {
       for (int j = 0; j < 3; ++j) {
         const int ind = i + nbody * j;
-        k1[ind] = r0[ind] + dr[ind] * d[k];
-        k2[ind] = v0[ind] + dv[ind] * d[k];
+        k1[ind] = r0[ind] + dr[ind] * nbody_common::d_rk.at(rk_order)[k];
+        k2[ind] = v0[ind] + dv[ind] * nbody_common::d_rk.at(rk_order)[k];
       }
     }
     const std::vector<double> acel = get_forces(mass, k1);
@@ -438,8 +419,8 @@ void nbody::Nbody::rungekutta_for_nbody(
         const int ind = i + nbody * j;
         dr[ind] = dt * k2[ind];
         dv[ind] = dt * acel[ind];
-        r[ind] += dr[ind] * c[k];
-        v[ind] += dv[ind] * c[k];
+        r[ind] += dr[ind] * nbody_common::c_rk.at(rk_order)[k];
+        v[ind] += dv[ind] * nbody_common::c_rk.at(rk_order)[k];
       }
     }
   }
