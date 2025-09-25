@@ -31,111 +31,112 @@
 #include <nlohmann/json.hpp>
 
 namespace nbody {
+template<typename T>
 class Nbody {
  public:
   explicit Nbody(const nlohmann::json input_pars);
   void nbody_simulator();
   int get_nbody() { return nbody_; }
   int get_ndata() { return ndata_; }
-  const std::vector<double>& get_c_alpha() { return c_alpha_; }
-  const std::vector<double>& get_energy() { return energy_; }
-  const std::vector<double>& get_angular_momentum()
+  const std::vector<T>& get_c_alpha() { return c_alpha_; }
+  const std::vector<T>& get_energy() { return energy_; }
+  const std::vector<T>& get_angular_momentum()
     { return angular_momentum_; }
-  const std::vector<double>& get_angular_momentum_i()
+  const std::vector<T>& get_angular_momentum_i()
     { return angular_momentum_i_; }
 
  private:
   nlohmann::json input_pars_;
   int nbody_;
   int ndata_;
-  std::vector<double> c_alpha_;
-  std::vector<double> pos_;
-  std::vector<double> vel_;
-  std::vector<double> mass_;
-  std::vector<double> energy_;
-  std::vector<double> angular_momentum_;
-  std::vector<double> angular_momentum_i_;
+  std::vector<T> c_alpha_;
+  std::vector<T> pos_;
+  std::vector<T> vel_;
+  std::vector<T> mass_;
+  std::vector<T> energy_;
+  std::vector<T> angular_momentum_;
+  std::vector<T> angular_momentum_i_;
 
   void get_ini_posvel(
     const nlohmann::json& input_pars);
-  std::tuple<double, std::vector<double>> linear_configuration(
+  std::tuple<T, std::vector<T>> linear_configuration(
     const int config,
-    const std::vector<double>& r_ini,
-    const std::vector<double>& mass);
+    const std::vector<T>& r_ini,
+    const std::vector<T>& mass);
 
-  std::vector<double> gen_vertices(
-    const double radius,
+  std::vector<T> gen_vertices(
+    const T radius,
     const int nbody);
 
-  double fderiv(
-    const std::array<double, 6>& a,
-    const double xi,
+  T fderiv(
+    const std::array<T, 6>& a,
+    const T xi,
     const int m);
 
-  double newton_raphson(const std::array<double, 6>& c);
+  T newton_raphson(const std::array<T, 6>& c);
 
   void positions_wrt_cm(
-    std::vector<double>& pos,
-    const std::vector<double>& mass);
+    std::vector<T>& pos,
+    const std::vector<T>& mass);
 
-  std::vector<double> get_alpha_for_3bodies(
-    const std::vector<double>& mass);
+  std::vector<T> get_alpha_for_3bodies(
+    const std::vector<T>& mass);
 
-  std::vector<double> get_alpha_for_linear_configuration(
+  std::vector<T> get_alpha_for_linear_configuration(
     const int config,
-    const double x,
-    const std::vector<double>& mass);
+    const T x,
+    const std::vector<T>& mass);
 
-  std::vector<double> get_alpha_for_4bodies(
-    const std::vector<double>& pos,
-    const std::vector<double>& mass);
+  std::vector<T> get_alpha_for_4bodies(
+    const std::vector<T>& pos,
+    const std::vector<T>& mass);
 
-  std::vector<double>
-    get_alpha_for_regular_polygon(const std::vector<double>& mass);
+  std::vector<T>
+    get_alpha_for_regular_polygon(const std::vector<T>& mass);
 
-  std::tuple<std::vector<double>, std::vector<double>>
+  std::tuple<std::vector<T>, std::vector<T>>
     gen_vertices_for_4bodies(
-    const double rbase,
-    const double kappa,
-    const double mass3,
+    const T rbase,
+    const T kappa,
+    const T mass3,
     const int selec_nu);
 
-  std::vector<double> get_forces(
-    const std::vector<double>& mass,
-    const std::vector<double>& pos);
+  std::vector<T> get_forces(
+    const std::vector<T>& mass,
+    const std::vector<T>& pos);
 
-  std::vector<double> get_velocity_i(
-    const double lambda,
-    const double thetap,
-    const std::vector<double>& pos);
+  std::vector<T> get_velocity_i(
+    const T lambda,
+    const T thetap,
+    const std::vector<T>& pos);
 
   void rungekutta_for_nbody(
-    std::vector<double>& r,
-    std::vector<double>& v,
-    const std::vector<double>& mass,
-    const double dt,
+    std::vector<T>& r,
+    std::vector<T>& v,
+    const std::vector<T>& mass,
+    const T dt,
     const int rk_order);
 
   void prn_vector(
     std::ofstream& ou,
     const std::string tag,
-    const std::vector<double>& vec);
+    const std::vector<T>& vec);
 
-  double get_excentricity(
-    const double lambda,
-    const double c_alpha,
-    const double theta_p);
+  T get_excentricity(
+    const T lambda,
+    const T c_alpha,
+    const T theta_p);
 
-  std::tuple<std::vector<double>, std::vector<double>>
+  std::tuple<std::vector<T>, std::vector<T>>
     check_angular_momentum(
-    const std::vector<double>& pos,
-    const std::vector<double>& vel,
-    const std::vector<double>& mass);
+    const std::vector<T>& pos,
+    const std::vector<T>& vel,
+    const std::vector<T>& mass);
 
-  double check_total_energy(
-    const std::vector<double>& pos,
-    const std::vector<double>& vel,
-    const std::vector<double>& mass);
+  T check_total_energy(
+    const std::vector<T>& pos,
+    const std::vector<T>& vel,
+    const std::vector<T>& mass);
 
  protected:
 };

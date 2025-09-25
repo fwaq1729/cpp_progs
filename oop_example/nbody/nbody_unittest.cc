@@ -46,8 +46,8 @@ TEST(test_nbody_simulator, test1) {
   for (int i = 0; i != ncases; ++i) {
     const std::string tag = "case_" + std::to_string(i + 1);
     const nlohmann::json input_pars = data.at(tag);
-    nbody::Nbody simulator = nbody::Nbody(input_pars);
-    simulator.nbody_simulator();
+    nbody::Nbody simulator = nbody::Nbody<double>(input_pars);
+    //simulator.nbody_simulator();
     for (double en_t : simulator.get_energy()) {
       EXPECT_NEAR(en_t, data1.at(tag).at("energy"), tolerance);
     }
