@@ -38,3 +38,10 @@ Implementation of standard geometry optimization algorithm: BFGS using MKL
 Implementation of standard geometry optimization algorithm: BFGS using cuBLAS, cuSolver
 (among other algorithms).
 
+6. cpu_vs_gpu
+Comparison of CPU vs GPU for integration
+a) One single CPU         : 870 ms
+b) CPU with 4 OMP threads : 220 ms
+c) CPU with 8 OMP threads : 110 ms
+d) GPU (RTX 4070)         :   1 ms
+
