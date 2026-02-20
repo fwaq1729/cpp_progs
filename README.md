@@ -46,3 +46,7 @@ b) CPU with 4 OMP threads : 220 ms
 c) CPU with 8 OMP threads : 110 ms  
 d) GPU (RTX 4070)         :   1 ms
 
+7. solve_poisson  
+Solving numerically and analytically Poisson's equation  
+Note.- Please look at statement of the problem in solve_poisson/poisson_doc.pdf
+
