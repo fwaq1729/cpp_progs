@@ -48,5 +48,14 @@ d) GPU (RTX 4070)         :   1 ms
 
 7. solve_poisson  
 Solving numerically and analytically Poisson's equation  
-Note.- Please look at statement of the problem in solve_poisson/poisson_doc.pdf
+Note.- Please look at statement of the problem in solve_poisson/poisson_doc.pdf  
 
+8. fdtd  
+Penetration of a lossless dielectric sphere by a plane wave  
+Using FDTD (Finite-Difference Time-Domain)  
+to solve Maxwell's equations in time domain  
+using modified Yee's algorithm.  
+Computing |Ey| / [Einc| (ey1) vs j and |Ez| / [Einc| (ez1) vs j  
+within lossless dielectric sphere.  
+Note.- Please look at the plot provided for comparison of performance of fdtd approach  
+       against exact solution: em_scattering_sphere/fdtd_example.png
