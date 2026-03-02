@@ -58,4 +58,8 @@ using modified Yee's algorithm.
 Computing |Ey| / [Einc| (ey1) vs j and |Ez| / [Einc| (ez1) vs j  
 within lossless dielectric sphere.  
 Note.- Please look at the plot provided for comparison of performance of fdtd approach  
-       against exact solution: em_scattering_sphere/fdtd_example.png
+       against exact solution: em_scattering_sphere/fdtd_example.png  
+
+9. solve_helmholtz  
+Solving numerically Helmholtz's equation using Finite Element (FE)  
+Note.- Please look at statement of the problem in solve_helmholtz/helmholtz_doc.pdf
