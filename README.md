@@ -62,4 +62,8 @@ Note.- Please look at the plot provided for comparison of performance of fdtd ap
 
 9. solve_helmholtz  
 Solving numerically Helmholtz's equation using Finite Element (FE)  
-Note.- Please look at statement of the problem in solve_helmholtz/helmholtz_doc.pdf
+Note.- Please look at statement of the problem in solve_helmholtz/helmholtz_doc.pdf  
+
+10. solve_laplace  
+Solving numerically Laplace's equation using Finite Element (FE)  
+Note.- Please look at the statement of the problem in solve_laplace/laplace_doc.pdf
